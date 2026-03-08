@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刑侦人格 · 单页解码</title>
+    <style>
+        /* ——— 纯粹黑白灰 · 细碎抽象 ——— */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #eceff2;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1e1e1e;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+
+            /* 抽象细碎背景：点阵 + 极淡线条 */
+            background-image: 
+                radial-gradient(#a0a0a0 1px, transparent 1px),
+                radial-gradient(#b5b5b5 0.8px, transparent 0.8px),
+                linear-gradient(135deg, #d0d0d0 0%, transparent 30%);
+            background-size: 40px 40px, 60px 60px, 100% 100%;
+            background-position: 0 0, 20px 30px, 0 0;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: repeating-linear-gradient(45deg, 
+                rgba(80, 80, 80, 0.02) 0px,
+                rgba(80, 80, 80, 0.02) 3px,
+                transparent 3px,
+                transparent 12px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            border-radius: 36px;
+            padding: 2rem 2rem 2.2rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(200, 200, 200, 0.6);
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-weight: 300;
+            font-size: 1.9rem;
+            letter-spacing: 2px;
+            color: #2c2c2c;
+            border-bottom: 1px solid #bbb;
+            padding-bottom: 0.7rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        h1 span {
+            font-size: 1rem;
+            font-weight: 300;
+            color: #6f6f6f;
+            background: #e9e9e9;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            letter-spacing: 0.5px;
+        }
+
+        /* 视图切换 */
+        .view {
+            transition: opacity 0.2s ease;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* 进度条区域 */
+        .progress-area {
+            margin-bottom: 2rem;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            color: #4f4f4f;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
+        }
+        .progress-track {
+            width: 100%;
+            height: 5px;
+            background: #d6d6d6;
+            border-radius: 10px;
+        }
+        .progress-fill {
+            height: 5px;
+            width: 0%;
+            background: #4f5f6b;
+            border-radius: 10px;
+            transition: width 0.2s;
+        }
+
+        /* 题目卡片 */
+        .question-card {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid #cdcdcd;
+            border-radius: 28px;
+            padding: 1.8rem 1.8rem 1.5rem;
+            margin: 1.5rem 0 2rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .q-num-badge {
+            display: inline-block;
+            background: #dddddd;
+            color: #2e2e2e;
+            padding: 0.2rem 1.2rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 1.2rem;
+            border: 1px solid #b5b5b5;
+        }
+        .q-text {
+            font-size: 1.25rem;
+            font-weight: 350;
+            color: #1c1c1c;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        /* 选项列表 */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            padding: 0.8rem 1.2rem;
+            background: #f4f4f4d9;
+            border: 1px solid #cbcbcb;
+            border-radius: 50px;
+            transition: all 0.1s;
+        }
+        .option:hover {
+            background: #eaeaea;
+            border-color: #9e9e9e;
+        }
+        .option input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #7e7e7e;
+            border-radius: 50%;
+            margin-top: 3px;
+            background: white;
+            transition: 0.1s;
+        }
+        .option input[type="radio"]:checked {
+            border-color: #3a3a3a;
+            background: #3a3a3a;
+            box-shadow: 0 0 0 2px rgba(80,80,80,0.15);
+        }
+        .option-label {
+            flex: 1;
+            color: #2b2b2b;
+            font-size: 0.98rem;
+            line-height: 1.4;
+        }
+        .option-label strong {
+            font-weight: 500;
+            color: #000;
+            margin-right: 8px;
+        }
+
+        /* 按钮组 */
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.2rem;
+        }
+        .btn {
+            background: transparent;
+            border: 1.5px solid #aaaaaa;
+            padding: 0.7rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 350;
+            color: #2e2e2e;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.1s;
+            backdrop-filter: blur(2px);
+            letter-spacing: 0.7px;
+            min-width: 100px;
+        }
+        .btn:hover {
+            background: #e0e0e0;
+            border-color: #6f6f6f;
+            color: #000;
+        }
+        .btn.secondary {
+            background: #ececec;
+            border-color: #b1b1b1;
+        }
+        .reset-btn {
+            border-color: #b0b0b0;
+            color: #4b4b4b;
+            padding: 0.7rem 1.8rem;
+        }
+
+        /* 结果区域 (沿用黑白灰风格) */
+        .result-area {
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            padding: 2rem 2rem 2.2rem;
+            border: 1px solid #cacaca;
+            box-shadow: inset 0 1px 5px rgba(255,255,255,0.5), 0 6px 16px rgba(0,0,0,0.03);
+        }
+        .result-header {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+            margin-bottom: 2rem;
+        }
+        .role-name {
+            font-size: 2rem;
+            font-weight: 280;
+            color: #2a2a2a;
+            border-right: 1px solid #b2b2b2;
+            padding-right: 20px;
+        }
+        .role-sub {
+            color: #5a5a5a;
+            font-style: italic;
+        }
+        .dimension-bars {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            background: #f0f0f0e0;
+            padding: 1.2rem 1.8rem;
+            border-radius: 60px;
+            border: 1px solid #c1c1c1;
+            margin-bottom: 2rem;
+        }
+        .dim-item {
+            flex: 1 1 100px;
+        }
+        .dim-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #4f4f4f;
+            margin-bottom: 5px;
+        }
+        .bar-bg {
+            background: #c9c9c9;
+            height: 6px;
+            border-radius: 12px;
+        }
+        .bar-fill {
+            height: 6px;
+            background: #4a4a4a;
+            width: 0%;
+            border-radius: 12px;
+        }
+        .profile-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin: 1.8rem 0 1.5rem;
+        }
+        .profile-card {
+            flex: 1 1 200px;
+            background: #f6f6f6cc;
+            border-radius: 24px;
+            padding: 1.3rem 1.3rem;
+            border: 1px solid #cfcfcf;
+        }
+        .profile-card h4 {
+            font-weight: 450;
+            color: #2f2f2f;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed #b9b9b9;
+            padding-bottom: 0.3rem;
+        }
+        .classic-img {
+            background: #e2e2e2;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            display: inline-block;
+            font-size: 0.95rem;
+            color: #1f1f1f;
+        }
+        .quote {
+            font-style: italic;
+            color: #3d3d3d;
+            border-top: 1px solid #c7c7c7;
+            padding-top: 0.8rem;
+            margin-top: 0.8rem;
+        }
+        .footnote {
+            color: #6a6a6a;
+            font-size: 0.8rem;
+            border-top: 1px dashed #c2c2c2;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .flex-right {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>刑侦·侧写 <span>单页追踪</span></h1>
+
+    <!-- 题目视图 -->
+    <div id="quizView" class="view">
+        <div class="progress-area">
+            <div class="progress-label">
+                <span id="progressText">第 1 / 24 题</span>
+                <span>黑白灰 · 冷静剖释</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 4.16%;"></div>
+            </div>
+        </div>
+
+        <div id="questionCard" class="question-card">
+            <!-- 动态渲染 -->
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn secondary" id="prevBtn" disabled>← 上一题</button>
+            <button class="btn" id="nextBtn">下一题 →</button>
+            <button class="btn reset-btn" id="resetQuizBtn">↺ 重置</button>
+        </div>
+    </div>
+
+    <!-- 结果视图 (初始隐藏) -->
+    <div id="resultView" class="view result-area hidden">
+        <div class="result-header">
+            <div class="role-name" id="roleName">-</div>
+            <div class="role-sub" id="roleTagline">-</div>
+        </div>
+        <!-- 维度条 -->
+        <div class="dimension-bars" id="dimBars">
+            <div class="dim-item"><div class="dim-label"><span>逻</span><span id="luoVal">0</span></div><div class="bar-bg"><div class="bar-fill" id="luoBar" style="width:0%"></div></div></div>
+            <div class="dim-item"><div class="dim-label"><span>情</span><span id="qingVal">0</span></div><div class="bar-bg"><div class="bar-fill" id="qingBar" style="width:0%"></div></div></div>
+            <div class="dim-item"><div class="dim-label"><span>细</span><span id="xiVal">0</span></div><div class="bar-bg"><div class="bar-fill" id="xiBar" style="width:0%"></div></div></div>
+            <div class="dim-item"><div class="dim-label"><span>直</span><span id="zhiVal">0</span></div><div class="bar-bg"><div class="bar-fill" id="zhiBar" style="width:0%"></div></div></div>
+        </div>
+        <!-- 详细报告 -->
+        <div class="profile-grid">
+            <div class="profile-card">
+                <h4>🧠 性格构成</h4>
+                <div id="personalityComposition">-</div>
+                <div class="classic-img" id="classicImage">📺 经典形象</div>
+            </div>
+            <div class="profile-card">
+                <h4>⚡ 优势·盲区</h4>
+                <div id="strengthWeakness">-</div>
+            </div>
+            <div class="profile-card">
+                <h4>🤝 搭档·对手</h4>
+                <div id="partnerEnemy">-</div>
+                <div class="quote" id="quoteMsg">“...”</div>
+            </div>
+        </div>
+        <div class="footnote" id="rawCounts"></div>
+        <div class="flex-right">
+            <button class="btn" id="restartBtn">↺ 重新测试</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ---------- 题目数据 (24题，与之前相同) ----------
+    const questions = [
+        { text: "抵达犯罪现场，警戒线外聚集了围观群众，你的第一反应是：", options: ["迅速观察现场整体格局，寻找异常点", "留意围观人群的反应和表情", "等待法医和技术组到达，准备配合工作", "思考凶手为何选择这个地点和时间"] },
+        { text: "进入案发现场，你会最先关注：", options: ["物品的位置、痕迹、血迹形态等物理证据", "死者可能的生活痕迹和个性化物品", "门窗、出入口等可能的进出通道", "整个空间给我的“氛围感”或异常感"] },
+        { text: "发现一个重要物证时，你会：", options: ["仔细观察后交给技术人员处理", "拍照记录并在脑中标记它的位置和状态", "思考它如何与现有线索串联", "立刻联想这个物证可能指向的凶手特征"] },
+        { text: "现场有一本打开的日记本，你会：", options: ["先看日期和最后记录的内容", "浏览内容，试图理解死者的情绪和人际关系", "等待鉴证人员提取指纹和笔迹样本", "快速翻阅，寻找任何异常或重复出现的关键词"] },
+        { text: "第一次询问目击证人时，你的风格是：", options: ["按照预设问题清单系统询问，避免遗漏", "先建立信任，让证人放松后再慢慢引导", "专注观察证人的微表情和肢体语言", "根据证人的回答灵活调整问题方向"] },
+        { text: "面对一个情绪激动的受害者家属，你会：", options: ["保持专业距离，给予基本信息后由社工跟进", "耐心倾听，适时表达理解和安慰", "详细记录他们提供的每一条线索", "试图从家属的叙述中寻找潜在疑点"] },
+        { text: "团队讨论案件时，你的发言通常是：", options: ["条理清晰地列出证据和推断", "分享对人物关系的理解和直觉感受", "补充细节，纠正可能被忽略的信息", "提出不同角度的假设，挑战既有思路"] },
+        { text: "当同事提出与你不同的观点时，你会：", options: ["要求对方提供证据支持", "思考对方观点的合理性，可能调整自己的想法", "记下分歧点，等待更多信息出现", "欣赏这种思维碰撞，可能衍生出新的思路"] },
+        { text: "遇到一个极度不配合的嫌疑人，你会：", options: ["展示证据，让他明白抵赖毫无意义", "尝试寻找他的软肋或在意的人事物", "耐心等待，用沉默和坚持施加压力", "玩心理战，让他摸不透你的底牌"] },
+        { text: "当你面对一堆看似毫无关联的线索时，你会：", options: ["按时间、地点、人物分类，逐步建立关联", "尝试理解每个线索背后的“人”的故事", "反复检查每个线索的真实性和可靠性", "退后一步，试图看到更大的图景"] },
+        { text: "你认为破案最关键的能力是：", options: ["严谨的逻辑推理能力", "对人的深刻理解和共情", "对细节的极致关注和记忆", "跳出常规的直觉和想象力"] },
+        { text: "遇到一个“完美犯罪”的案子，你的想法是：", options: ["没有完美犯罪，只是我们还没找到破绽", "这种案子背后一定有强烈的动机和复杂的人性", "要反复检视每个物证是否被污染或伪造", "凶手可能是个高智商对手，这很刺激"] },
+        { text: "你在办案中最容易犯的错误是：", options: ["过于依赖证据，忽略了人的因素", "过于感情用事，影响了客观判断", "陷入细节，看不到全局", "直觉太强，有时跳跃过快"] },
+        { text: "面对一个悬而未决的陈年旧案，你会：", options: ["重新梳理所有案卷，用新知识审视旧证据", "寻找当年办案人员和家属，了解遗漏的细节", "检查当年的物证是否可以用新技术重检", "试图还原当年凶手的心态和处境"] },
+        { text: "连续熬夜办案，体力接近极限时，你会：", options: ["用咖啡保持清醒，坚持到案件突破", "允许自己短暂休息，调整状态", "依然保持高标准，不放过任何细节", "兴奋感支撑着你，越是关键时刻越清醒"] },
+        { text: "上级要求你快速结案，但你感觉仍有疑点，你会：", options: ["据理力争，要求更多时间查明真相", "按上级要求结案，但内心保留自己的判断", "先结案，但暗中继续关注疑点", "寻找两全其美的方式，既完成任务又保全真相"] },
+        { text: "当你的直觉与证据相悖时，你会：", options: ["无条件相信证据，直觉只是参考", "反复检视证据是否有误", "怀疑自己是否遗漏了某些细节", "相信直觉，继续寻找能证明直觉的证据"] },
+        { text: "办案过程中遭遇生命危险，你的第一反应是：", options: ["评估形势，寻找最安全的应对方式", "保护身边的同事或无辜者", "冷静应对，按训练程序行动", "本能反应，事后才感到后怕"] },
+        { text: "你认为犯罪的根本原因是：", options: ["个人的选择和道德缺失", "成长环境和人际关系的影响", "心理或精神层面的异常", "复杂的社会因素和偶然事件的叠加"] },
+        { text: "对待嫌疑人，你的基本态度是：", options: ["依法办案，保持距离，不带个人情绪", "尝试理解他为何走上这条路，但不认同其行为", "关注他的行为和证据，不关心他的故事", "保持警惕，任何人都有可能说谎"] },
+        { text: "你认为司法公正的核心是：", options: ["程序正义，每一个环节都经得起检验", "结果正义，让受害者得到慰藉", "证据确凿，避免冤假错案", "平衡多方利益，实现社会效果最大化"] },
+        { text: "面对一个可怜又可恨的凶手，你的情感是：", options: ["法律就是法律，情感不应干扰判断", "同情他的遭遇，但必须为受害者讨回公道", "保持中立，这是法庭要处理的事", "理解人性的复杂，每个人都有光明和黑暗面"] },
+        { text: "办案多年后，你对人性的看法是：", options: ["人性经不起考验，每个人都可能犯罪", "人性复杂，善恶并存，环境是关键", "大部分人是善良的，少数是真正的恶", "人性是一面镜子，你看到的是自己的投射"] },
+        { text: "你认为自己是怎样的一个人：", options: ["理性、客观、值得信赖", "有温度、有共情力、重感情", "细致、严谨、追求完美", "敏锐、直觉强、不循常规"] }
+    ];
+
+    const dimMap = ['luo', 'qing', 'xi', 'zhi']; // 索引0->逻,1->情,2->细,3->直
+
+    // 状态
+    let currentIndex = 0;                // 0~23
+    const answers = new Array(24).fill(undefined); // 存储选项索引0~3
+
+    // DOM 元素
+    const quizView = document.getElementById('quizView');
+    const resultView = document.getElementById('resultView');
+    const questionCard = document.getElementById('questionCard');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetQuizBtn = document.getElementById('resetQuizBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+
+    // 结果展示元素
+    const roleName = document.getElementById('roleName');
+    const roleTagline = document.getElementById('roleTagline');
+    const luoVal = document.getElementById('luoVal');
+    const qingVal = document.getElementById('qingVal');
+    const xiVal = document.getElementById('xiVal');
+    const zhiVal = document.getElementById('zhiVal');
+    const luoBar = document.getElementById('luoBar');
+    const qingBar = document.getElementById('qingBar');
+    const xiBar = document.getElementById('xiBar');
+    const zhiBar = document.getElementById('zhiBar');
+    const personalityComposition = document.getElementById('personalityComposition');
+    const classicImage = document.getElementById('classicImage');
+    const strengthWeakness = document.getElementById('strengthWeakness');
+    const partnerEnemy = document.getElementById('partnerEnemy');
+    const quoteMsg = document.getElementById('quoteMsg');
+    const rawCounts = document.getElementById('rawCounts');
+
+    // 渲染当前题目
+    function renderQuestion() {
+        const q = questions[currentIndex];
+        let html = `
+            <div class="q-num-badge">第 ${currentIndex+1} / 24 题</div>
+            <div class="q-text">${q.text}</div>
+            <div class="options">
+        `;
+        q.options.forEach((opt, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            const checkedAttr = (answers[currentIndex] === idx) ? 'checked' : '';
+            html += `
+                <label class="option">
+                    <input type="radio" name="currentQ" value="${idx}" ${checkedAttr}>
+                    <span class="option-label"><strong>${letter}.</strong> ${opt}</span>
+                </label>
+            `;
+        });
+        html += `</div>`;
+        questionCard.innerHTML = html;
+
+        // 为所有radio添加change事件保存答案
+        const radios = document.querySelectorAll('input[name="currentQ"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', function(e) {
+                const val = parseInt(e.target.value);
+                answers[currentIndex] = val;
+                // 可以实时更新进度条等，但不需要额外动作
+            });
+        });
+
+        // 更新进度条和文本
+        progressText.innerText = `第 ${currentIndex+1} / 24 题`;
+        progressFill.style.width = ((currentIndex+1)/24 * 100) + '%';
+
+        // 上一题按钮状态
+        prevBtn.disabled = (currentIndex === 0);
+
+        // 下一题按钮文字
+        if (currentIndex === 23) {
+            nextBtn.innerText = '🔍 查看结果';
+        } else {
+            nextBtn.innerText = '下一题 →';
+        }
+    }
+
+    // 下一题/提交逻辑
+    function handleNext() {
+        // 检查当前题目是否已选
+        if (answers[currentIndex] === undefined) {
+            alert('请选择一个选项。');
+            return;
+        }
+
+        if (currentIndex === 23) {
+            // 计算并显示结果
+            computeAndShowResult();
+        } else {
+            // 移到下一题
+            currentIndex++;
+            renderQuestion();
+        }
+    }
+
+    // 上一题
+    function handlePrev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderQuestion();
+        }
+    }
+
+    // 重置测试 (清空答案，回到第一题)
+    function resetTest() {
+        for (let i = 0; i < 24; i++) answers[i] = undefined;
+        currentIndex = 0;
+        renderQuestion();
+        // 确保结果视图隐藏，题目视图显示
+        quizView.classList.remove('hidden');
+        resultView.classList.add('hidden');
+    }
+
+    // 统计维度
+    function getCounts() {
+        const counts = { luo:0, qing:0, xi:0, zhi:0 };
+        for (let i=0; i<24; i++) {
+            const ans = answers[i];
+            if (ans === undefined) return null; // 不该发生，但防错
+            const dim = dimMap[ans];
+            counts[dim]++;
+        }
+        return counts;
+    }
+
+    // 结果生成函数 (复用之前逻辑，稍作简化但保留完整)
+    function getResultProfile(counts) {
+        const { luo, qing, xi, zhi } = counts;
+        const total = 24;
+
+        // 极端情况：任一维度≥12 或 ≤2
+        if (luo >= 12 || qing >= 12 || xi >= 12 || zhi >= 12 || luo <= 2 || qing <= 2 || xi <= 2 || zhi <= 2) {
+            let dominant = 'luo';
+            let maxVal = luo;
+            if (qing > maxVal) { dominant = 'qing'; maxVal = qing; }
+            if (xi > maxVal) { dominant = 'xi'; maxVal = xi; }
+            if (zhi > maxVal) { dominant = 'zhi'; maxVal = zhi; }
+            const domName = { luo:'逻辑', qing:'情感', xi:'细节', zhi:'直觉' }[dominant];
+            return {
+                role: '高智商犯罪者 / 偏执天才',
+                sub: `【${domName}支配型】游离在黑白边缘`,
+                personality: `${domName}型构成：${Math.round(maxVal/24*100)}% 的偏执，其余散落在其他维度。`,
+                classic: { luo:'《沉默的羔羊》Hannibal', qing:'《蝙蝠侠》小丑', xi:'《嫌疑人X》石神哲哉', zhi:'《死亡笔记》L' }[dominant],
+                strength: '超凡的专注力、异于常人的思维深度，能看到别人忽略的规律。',
+                weakness: '可能缺乏共情或脱离现实，让人难以靠近。',
+                partner: '需要一位能“翻译”你想法、接地气的搭档（如情感型或细节型）。',
+                enemy: '最警惕同样是极端但类型相反的对手，他们能预判你的预判。',
+                quote: { luo:'"完美的犯罪根本不存在，除非……"', qing:'"我只是想看看他们惊恐的表情。"', xi:'"逻辑的尽头，不是理性，而是数学。"', zhi:'"名字写在这个笔记本上的人都会死。"' }[dominant]
+            };
+        }
+
+        // 均衡隐匿者：每个维度5~7左右
+        if (luo >=5 && luo <=7 && qing>=5 && qing<=7 && xi>=5 && xi<=7 && zhi>=5 && zhi<=7) {
+            return {
+                role: '隐匿观察者 · 多重身份',
+                sub: '无法被简单定义的核心',
+                personality: `逻 ${luo} | 情 ${qing} | 细 ${xi} | 直 ${zhi} — 完美的平衡，你适应一切。`,
+                classic: '《无间道》陈永仁/刘建明、《谍影重重》杰森·伯恩',
+                strength: '适应力极强，能在不同角色间切换，团队里的稳定中枢。',
+                weakness: '有时缺乏鲜明的个人立场，容易被忽略。',
+                partner: '任何类型都能合作，尤其与偏执型互补。',
+                enemy: '没有固定的天敌，但可能被极端混乱的对手打乱节奏。',
+                quote: '"我不是任何角色，但任何角色里都有我。"'
+            };
+        }
+
+        // 找出最高次高
+        const entries = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+        const first = entries[0][0], second = entries[1][0];
+        const dims = [first, second].sort().join('_');
+        const roleMap = {
+            'luo_qing': { name:'刑警 (重案组探员)', tag:'逻辑与共情的平衡者', classic:'《信号》李材韩、《重案六组》曾克强' },
+            'luo_xi': { name:'法医 / 鉴证专家', tag:'科学信仰，证据至上', classic:'《法医秦明》秦明、《CSI》Grissom' },
+            'luo_zhi': { name:'指挥官 / 专案组长', tag:'战略全局，决断力', classic:'《福尔摩斯》福尔摩斯、《刑事侦缉档案》张大勇' },
+            'qing_xi': { name:'侧写师 / 心理分析师', tag:'读心者，洞察人性痕迹', classic:'《犯罪心理》Gideon、《心灵猎人》Holden' },
+            'qing_zhi': { name:'谈判专家 / 卧底探员', tag:'情绪直觉，适应伪装', classic:'《无间道》陈永仁、《谈判专家》简洁' },
+            'xi_zhi': { name:'情报分析师 / 技术专家', tag:'数据之外，直觉之内', classic:'《疑犯追踪》Finch、《黑客军团》Elliot' }
+        };
+        let base = roleMap[dims] || { name:'复合型专才', tag:'多维特质', classic:'《心理神探》' };
+        // 性格构成百分比
+        const pct = (dim) => Math.round(counts[dim]/total*100);
+        const compStr = `逻 ${pct('luo')}% · 情 ${pct('qing')}% · 细 ${pct('xi')}% · 直 ${pct('zhi')}%`;
+
+        // 简单模板
+        const strengthMap = {
+            'luo_qing': '理性兼顾人情，既能推理又能打动人心。',
+            'luo_xi': '证据链严谨，结论牢不可破。',
+            'luo_zhi': '快速决策，调动资源，总能抓住战机。',
+            'qing_xi': '通过微小细节感知情绪动机，侧写精准。',
+            'qing_zhi': '瞬间读懂气氛，潜入任何对话。',
+            'xi_zhi': '从数据洪流中打捞关键，先知般敏锐。'
+        };
+        const weakMap = {
+            'luo_qing': '有时在两者间犹豫，延误判断。',
+            'luo_xi': '可能忽略人的因素，显得冷漠。',
+            'luo_zhi': '容易过度自信，小细节翻船。',
+            'qing_xi': '容易陷进某个人的故事里。',
+            'qing_zhi': '太依赖状态，不稳定。',
+            'xi_zhi': '思维跳跃，别人跟不上。'
+        };
+        const strength = strengthMap[dims] || '多维能力，难以被定义。';
+        const weakness = weakMap[dims] || '注意平衡内在矛盾。';
+
+        const complement = { luo:'qing', qing:'xi', xi:'zhi', zhi:'luo' }[first] || 'qing';
+        const enemyDim = { luo:'zhi', qing:'luo', xi:'qing', zhi:'xi' }[first] || 'xi';
+        const dimName = { luo:'逻辑', qing:'情感', xi:'细节', zhi:'直觉' };
+        const partner = `${dimName[complement]}型搭档`;
+        const enemy = `${dimName[enemyDim]}型对手`;
+
+        const quote = `“${first === 'luo' ? '真相永远藏在细节里。' : first === 'qing' ? '人心是最大的变数。' : first === 'xi' ? '凡有接触，必留痕迹。' : '有时候要闭上眼睛，才能看见。'}”`;
+
+        return {
+            role: base.name,
+            sub: base.tag,
+            personality: compStr,
+            classic: base.classic,
+            strength: strength,
+            weakness: weakness,
+            partner: partner,
+            enemy: enemy,
+            quote: quote
+        };
+    }
+
+    function computeAndShowResult() {
+        const counts = getCounts();
+        if (!counts) return;
+        const profile = getResultProfile(counts);
+
+        // 填充结果
+        roleName.innerText = profile.role;
+        roleTagline.innerText = profile.sub;
+        luoVal.innerText = counts.luo;
+        qingVal.innerText = counts.qing;
+        xiVal.innerText = counts.xi;
+        zhiVal.innerText = counts.zhi;
+        luoBar.style.width = (counts.luo/24*100)+'%';
+        qingBar.style.width = (counts.qing/24*100)+'%';
+        xiBar.style.width = (counts.xi/24*100)+'%';
+        zhiBar.style.width = (counts.zhi/24*100)+'%';
+        personalityComposition.innerText = profile.personality;
+        classicImage.innerText = `📺 ${profile.classic}`;
+        strengthWeakness.innerHTML = `<span style="color:#2b5770;">✓ 优势</span> ${profile.strength}<br><span style="color:#7a5f5f; margin-top:6px; display:inline-block;">✗ 盲区</span> ${profile.weakness}`;
+        partnerEnemy.innerHTML = `<span>🤝 最佳搭档：${profile.partner}</span><br><span>⚠️ 警惕对手：${profile.enemy}</span>`;
+        quoteMsg.innerText = profile.quote;
+        rawCounts.innerText = `逻 ${counts.luo} · 情 ${counts.qing} · 细 ${counts.xi} · 直 ${counts.zhi}`;
+
+        // 切换视图
+        quizView.classList.add('hidden');
+        resultView.classList.remove('hidden');
+    }
+
+    // 事件绑定
+    prevBtn.addEventListener('click', handlePrev);
+    nextBtn.addEventListener('click', handleNext);
+    resetQuizBtn.addEventListener('click', resetTest);
+    restartBtn.addEventListener('click', resetTest);
+
+    // 初始化
+    renderQuestion();
+})();
+</script>
+</body>
+</html>
